@@ -5,6 +5,7 @@ import io.jmix.core.Messages;
 import io.jmix.core.TimeSource;
 import io.jmix.core.metamodel.datatype.DatatypeFormatter;
 import io.jmix.core.security.CurrentAuthentication;
+import io.jmix.petclinic.app.visit.app.VisitTestDataCreationService;
 import io.jmix.petclinic.entity.visit.Visit;
 import io.jmix.petclinic.entity.visit.VisitType;
 import io.jmix.petclinic.screen.visit.calendar.CalendarMode;
@@ -12,6 +13,8 @@ import io.jmix.petclinic.screen.visit.calendar.CalendarNavigationMode;
 import io.jmix.petclinic.screen.visit.calendar.CalendarNavigators;
 import io.jmix.petclinic.screen.visit.calendar.CalendarScreenAdjustment;
 import io.jmix.petclinic.screen.visit.calendar.VisitTypeIcon;
+import io.jmix.ui.AppUI;
+import io.jmix.ui.Dialogs;
 import io.jmix.ui.Notifications;
 import io.jmix.ui.ScreenBuilders;
 import io.jmix.ui.component.Button;
@@ -21,6 +24,8 @@ import io.jmix.ui.component.DatePicker;
 import io.jmix.ui.component.HasValue;
 import io.jmix.ui.component.Label;
 import io.jmix.ui.component.RadioButtonGroup;
+import io.jmix.ui.executor.BackgroundTask;
+import io.jmix.ui.executor.TaskLifeCycle;
 import io.jmix.ui.model.CollectionContainer;
 import io.jmix.ui.model.CollectionLoader;
 import io.jmix.ui.model.DataContext;
@@ -42,6 +47,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static io.jmix.petclinic.screen.visit.calendar.CalendarNavigationMode.*;
 import static io.jmix.petclinic.screen.visit.calendar.RelativeDates.startOfWeek;
@@ -88,6 +94,10 @@ public class VisitBrowse extends StandardLookup<Visit> {
     protected MessageBundle messageBundle;
     @Autowired
     protected Messages messages;
+    @Autowired
+    private VisitTestDataCreationService visitTestDataCreationService;
+    @Autowired
+    private Dialogs dialogs;
 
     @Subscribe
     protected void onInit(InitEvent event) {
@@ -104,6 +114,11 @@ public class VisitBrowse extends StandardLookup<Visit> {
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         current(CalendarMode.WEEK);
+    }
+
+    @Subscribe
+    protected void onAfterShow(AfterShowEvent event) {
+        createVisitDataIfNecessary();
     }
 
     @SuppressWarnings("deprecation")
@@ -289,6 +304,36 @@ public class VisitBrowse extends StandardLookup<Visit> {
                                 visit.getPetName()
                         )
                 )
+                .show();
+    }
+
+
+    private void createVisitDataIfNecessary() {
+        if (visitTestDataCreationService.necessaryToCreateVisitTestData()) {
+
+
+            final AppUI ui = AppUI.getCurrent();
+
+            dialogs.createBackgroundWorkDialog(this,
+                    new BackgroundTask<Number, Void>(60, TimeUnit.SECONDS, this) {
+                        @Override
+                        public Void run(TaskLifeCycle<Number> taskLifeCycle) {
+                            visitTestDataCreationService.createVisits();
+                            ui.access(() -> refreshDataAfterVisitDataCreation());
+                            return null;
+                        }
+                    }
+                    )
+                    .withShowProgressInPercentage(false)
+                    .withCaption(messageBundle.getMessage("createVisitDataCaption"))
+                    .withMessage(messageBundle.getMessage("createVisitDataMessage"))
+                    .show();
+        }
+    }
+    private void refreshDataAfterVisitDataCreation() {
+        getScreenData().loadAll();
+        notifications.create(Notifications.NotificationType.TRAY)
+                .withCaption(messageBundle.getMessage("visitDataCreated"))
                 .show();
     }
 }

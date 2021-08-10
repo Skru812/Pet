@@ -19,6 +19,6 @@ public class CreateVisitTestdataOnApplicationStart {
     @Authenticated
     @EventListener
     public void onApplicationStarted(ApplicationStartedEvent event) {
-        visitTestDataCreation.createData();
+//        visitTestDataCreation.createData();
     }
 }

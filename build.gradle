@@ -34,6 +34,7 @@ dependencies {
     implementation 'io.jmix.security:jmix-security-ui-starter'
     implementation 'io.jmix.security:jmix-security-data-starter'
     implementation 'io.jmix.localfs:jmix-localfs-starter'
+    implementation 'io.jmix.sessions:jmix-sessions-starter'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
@@ -53,6 +54,9 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.11.1'
     testImplementation 'org.mockito:mockito-core:3.2.4'
     testImplementation 'org.mockito:mockito-junit-jupiter:3.2.4'
+
+
+    implementation 'org.apache.commons:commons-dbcp2'
 
 
     testImplementation 'io.jmix.ui:jmix-ui-test-assist'
