@@ -1,6 +1,7 @@
 package io.jmix.petclinic.datasource;
 
-import io.jmix.core.security.ClientDetails;
+import io.jmix.audit.UserSessions;
+import io.jmix.audit.entity.UserSession;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.sessions.events.JmixSessionDestroyedEvent;
 import liquibase.exception.LiquibaseException;
@@ -15,7 +16,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 
@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -130,27 +131,23 @@ public class PetclinicRoutingDataSource extends AbstractDataSource implements Ap
         return dataSources.computeIfAbsent(sessionId, this::createSessionDataSource);
     }
 
+
     protected String getSessionId() {
+        UserSessions userSessions = applicationContext.getBean(UserSessions.class);
         CurrentAuthentication currentAuthentication = applicationContext.getBean(CurrentAuthentication.class);
         Authentication authentication = currentAuthentication.getAuthentication();
         if (authentication != null) {
-            Object details = authentication.getDetails();
+            Object principal = authentication.getPrincipal();
 
-            String sessionId = null;
-            if (details instanceof WebAuthenticationDetails) {
-                sessionId = ((WebAuthenticationDetails) details).getSessionId();
-            } else if (details instanceof ClientDetails) {
-                sessionId = ((ClientDetails) details).getSessionId();
+            Optional<UserSession> userSession = userSessions.sessions(principal).findFirst();
+            if (userSession.isPresent()) {
+                return userSession.get().getSessionId();
             }
-
-            if (sessionId == null)  {
-                return defaultSessionId;
-            }
-            return sessionId;
         }
 
         return defaultSessionId;
     }
+
 
     protected DataSource createSessionDataSource(String sessionId) {
         log.debug("Creating datasource for session {}", sessionId);
