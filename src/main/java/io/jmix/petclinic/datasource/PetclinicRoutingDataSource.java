@@ -1,7 +1,5 @@
 package io.jmix.petclinic.datasource;
 
-import io.jmix.audit.UserSessions;
-import io.jmix.audit.entity.UserSession;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.sessions.events.JmixSessionDestroyedEvent;
 import liquibase.exception.LiquibaseException;
@@ -18,6 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -25,7 +24,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -133,16 +131,10 @@ public class PetclinicRoutingDataSource extends AbstractDataSource implements Ap
 
 
     protected String getSessionId() {
-        UserSessions userSessions = applicationContext.getBean(UserSessions.class);
         CurrentAuthentication currentAuthentication = applicationContext.getBean(CurrentAuthentication.class);
         Authentication authentication = currentAuthentication.getAuthentication();
         if (authentication != null) {
-            Object principal = authentication.getPrincipal();
-
-            Optional<UserSession> userSession = userSessions.sessions(principal).findFirst();
-            if (userSession.isPresent()) {
-                return userSession.get().getSessionId();
-            }
+            return RequestContextHolder.currentRequestAttributes().getSessionId();
         }
 
         return defaultSessionId;
