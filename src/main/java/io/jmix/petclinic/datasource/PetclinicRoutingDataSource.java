@@ -1,5 +1,6 @@
 package io.jmix.petclinic.datasource;
 
+import io.jmix.core.security.ClientDetails;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.sessions.events.JmixSessionDestroyedEvent;
 import liquibase.exception.LiquibaseException;
@@ -14,9 +15,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -134,12 +135,20 @@ public class PetclinicRoutingDataSource extends AbstractDataSource implements Ap
         CurrentAuthentication currentAuthentication = applicationContext.getBean(CurrentAuthentication.class);
         Authentication authentication = currentAuthentication.getAuthentication();
         if (authentication != null) {
-            return RequestContextHolder.currentRequestAttributes().getSessionId();
+            Object details = authentication.getDetails();
+
+            String sessionId = null;
+            if (details instanceof WebAuthenticationDetails) {
+                sessionId = ((WebAuthenticationDetails) details).getSessionId();
+            } else if (details instanceof ClientDetails) {
+                sessionId = ((ClientDetails) details).getSessionId();
+            }
+
+            return sessionId;
         }
 
         return defaultSessionId;
     }
-
 
     protected DataSource createSessionDataSource(String sessionId) {
         log.debug("Creating datasource for session {}", sessionId);
