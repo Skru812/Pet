@@ -47,6 +47,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import static io.jmix.petclinic.screen.visit.calendar.CalendarNavigationMode.*;
@@ -123,8 +124,9 @@ public class VisitBrowse extends StandardLookup<Visit> {
 
     @SuppressWarnings("deprecation")
     private void initSortCalendarEventsInMonthlyView() {
-        calendar.unwrap(com.vaadin.v7.ui.Calendar.class)
-                .setEventSortOrder(CalendarState.EventSortOrder.START_DATE_DESC);
+        final com.vaadin.v7.ui.Calendar calendar = this.calendar.unwrap(com.vaadin.v7.ui.Calendar.class);
+        calendar.setEventSortOrder(CalendarState.EventSortOrder.START_DATE_DESC);
+        calendar.setTimeZone(TimeZone.getDefault());
     }
 
 
