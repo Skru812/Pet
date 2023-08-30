@@ -3,6 +3,7 @@ package io.jmix.petclinic.config;
 import io.jmix.ui.menu.MenuConfig;
 import io.jmix.ui.menu.MenuItem;
 import org.dom4j.Element;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -18,12 +19,13 @@ public class MenuConfiguration {
 
     @Primary
     @Bean
+    @ConditionalOnProperty(prefix = "petclinic.misc", name = "hide-sensitive-menu-screens", havingValue = "true")
     MenuConfig extendedMenuConfig() {
         return new ExtendedMenuConfig(getForbiddenScreens());
     }
 
     protected Collection<String> getForbiddenScreens() {
-        return List.of("ui_JmxConsoleScreen", "sys_LockInfo.browse", "entityInspector.browse");
+        return List.of("ui_JmxConsoleScreen");
     }
 
     public static class ExtendedMenuConfig extends MenuConfig {
@@ -46,7 +48,7 @@ public class MenuConfiguration {
 
         protected boolean isForbiddenScreen(Element element) {
             String screen = element.attributeValue("screen");
-            return forbiddenScreens.contains(screen);
+            return screen != null && forbiddenScreens.contains(screen);
         }
     }
 }
